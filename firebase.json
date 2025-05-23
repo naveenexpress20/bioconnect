@@ -1,0 +1,38 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "bioconnect-9b916",
+          "appId": "1:528719596592:android:ad34b3ce71c0fde4f831f5",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "bioconnect-9b916",
+          "configurations": {
+            "android": "1:528719596592:android:ad34b3ce71c0fde4f831f5",
+            "ios": "1:528719596592:ios:1e6a0b09b5210497f831f5",
+            "macos": "1:528719596592:ios:1e6a0b09b5210497f831f5",
+            "web": "1:528719596592:web:18a25233ea2ea058f831f5",
+            "windows": "1:528719596592:web:fd565eda7a374adbf831f5"
+          }
+        }
+      }
+    }
+  },
+  "emulators": {
+    "singleProjectMode": true,
+    "auth": {
+      "port": 9099
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "ui": {
+      "enabled": true,
+      "port": 4000
+    }
+  }
+}

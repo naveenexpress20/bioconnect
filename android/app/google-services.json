@@ -1,0 +1,82 @@
+{
+  "project_info": {
+    "project_number": "528719596592",
+    "project_id": "bioconnect-9b916",
+    "storage_bucket": "bioconnect-9b916.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:528719596592:android:c1e22ecade42abc5f831f5",
+        "android_client_info": {
+          "package_name": "com.example.bioconnec"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "528719596592-qiopubcem0mo0lah3bul7jqj0s35o26l.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCLziGnDh37gdiK3PMN7YjttZSDxpHDqAQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "528719596592-qiopubcem0mo0lah3bul7jqj0s35o26l.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "528719596592-65e1lqe6rmflu060n2aooomaqdng6shk.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.bioconnect"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:528719596592:android:ad34b3ce71c0fde4f831f5",
+        "android_client_info": {
+          "package_name": "com.example.bioconnect"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "528719596592-qiopubcem0mo0lah3bul7jqj0s35o26l.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCLziGnDh37gdiK3PMN7YjttZSDxpHDqAQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "528719596592-qiopubcem0mo0lah3bul7jqj0s35o26l.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "528719596592-65e1lqe6rmflu060n2aooomaqdng6shk.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.bioconnect"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
