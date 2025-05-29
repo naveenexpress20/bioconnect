@@ -3,56 +3,49 @@ import 'room_page.dart'; // Import for navigation to room creation/joining
 import 'family_member_stats.dart'; // Import for navigation to stats page
 
 class FamilyPage extends StatefulWidget {
-  final String? roomCode;
-  final List<Map<String, String>>? existingMembers;
+  final bool isCreator;
 
-  const FamilyPage({
-    super.key,
-    this.roomCode,
-    this.existingMembers,
-  });
+  const FamilyPage({Key? key, required this.isCreator}) : super(key: key);
 
   @override
-  _FamilyPageState createState() => _FamilyPageState();
+  State<FamilyPage> createState() => _FamilyPageState();
 }
 
 class _FamilyPageState extends State<FamilyPage> {
   List<Map<String, String>> familyMembers = [];
+  String? roomCode;
 
   @override
   void initState() {
     super.initState();
-    // Initialize with existing members if provided
-    if (widget.existingMembers != null) {
-      familyMembers = List.from(widget.existingMembers!);
-    }
 
-    // Add some default family members for demonstration
-    if (familyMembers.isEmpty) {
-      familyMembers = [
-        {
-          'name': 'John Doe',
-          'age': '45',
-          'gender': 'Male',
-          'imageUrl': 'assets/images/profile1.png',
-          'relationship': 'Father'
-        },
-        {
-          'name': 'Jane Doe',
-          'age': '42',
-          'gender': 'Female',
-          'imageUrl': 'assets/images/profile2.png',
-          'relationship': 'Mother'
-        },
-        {
-          'name': 'Alex Doe',
-          'age': '16',
-          'gender': 'Male',
-          'imageUrl': 'assets/images/profile3.png',
-          'relationship': 'Son'
-        },
-      ];
-    }
+    // Initialize with default family members for demonstration
+    familyMembers = [
+      {
+        'name': 'John Doe',
+        'age': '45',
+        'gender': 'Male',
+        'imageUrl': 'assets/images/profile1.png',
+        'relationship': 'Father'
+      },
+      {
+        'name': 'Jane Doe',
+        'age': '42',
+        'gender': 'Female',
+        'imageUrl': 'assets/images/profile2.png',
+        'relationship': 'Mother'
+      },
+      {
+        'name': 'Alex Doe',
+        'age': '16',
+        'gender': 'Male',
+        'imageUrl': 'assets/images/profile3.png',
+        'relationship': 'Son'
+      },
+    ];
+
+    // Generate a sample room code
+    roomCode = 'FAM${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
   }
 
   @override
@@ -65,10 +58,10 @@ class _FamilyPageState extends State<FamilyPage> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black, size: 24),
           onPressed: () {
-            // Navigate back to room page or previous screen
+            // Navigate back to room page with the actual room code
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const RoomPage()),
+              MaterialPageRoute(builder: (context) => RoomPage(roomCode: roomCode ?? 'DEFAULT_CODE')),
             );
           },
         ),
@@ -87,8 +80,8 @@ class _FamilyPageState extends State<FamilyPage> {
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
         child: Column(
           children: [
-            // Room code display (if available)
-            if (widget.roomCode != null) ...[
+            // Room code display
+            if (roomCode != null) ...[
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -110,7 +103,7 @@ class _FamilyPageState extends State<FamilyPage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      widget.roomCode!,
+                      roomCode!,
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -207,15 +200,14 @@ class _FamilyPageState extends State<FamilyPage> {
   Widget _buildFamilyMemberCard(Map<String, String> member, int index) {
     return GestureDetector(
       onTap: () {
-        // Navigate to family member stats page
+        // Navigate to family member stats page with proper parameters
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => FamilyMemberStatsPage(
-              name: member['name'] ?? 'Unknown',
-              imageUrl: member['imageUrl'] ?? '',
-              age: member['age'] ?? '',
-              gender: member['gender'] ?? '',
+              memberId: 'member_$index', // Generate a unique member ID
+              memberName: member['name'] ?? 'Unknown',
+              memberAge: member['age']?.toString() ?? '0', // This returns a String // Add the missing memberAge parameter
             ),
           ),
         );
@@ -251,7 +243,7 @@ class _FamilyPageState extends State<FamilyPage> {
                     // Profile image
                     ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: Container(
+                      child: SizedBox(
                         width: double.infinity,
                         height: double.infinity,
                         child: member['imageUrl']!.isNotEmpty
@@ -433,7 +425,7 @@ class _FamilyPageState extends State<FamilyPage> {
   }
 
   void _inviteFamilyMember() {
-    String roomCode = widget.roomCode ?? 'ABC123';
+    String currentRoomCode = roomCode ?? 'ABC123';
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -451,7 +443,7 @@ class _FamilyPageState extends State<FamilyPage> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  roomCode,
+                  currentRoomCode,
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,

@@ -1,311 +1,202 @@
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 class FamilyMemberStatsPage extends StatefulWidget {
-  final String name;
-  final String imageUrl;
-  final String age;
-  final String gender;
+  final String memberId;
+  final String memberName;
+  final String memberAge;
+  final String memberImage;
 
   const FamilyMemberStatsPage({
-    super.key,
-    required this.name,
-    required this.imageUrl,
-    this.age = "",
-    this.gender = "",
-  });
+    Key? key,
+    required this.memberId,
+    required this.memberName,
+    required this.memberAge,
+    this.memberImage = '', // Made optional with empty string default
+  }) : super(key: key);
 
   @override
-  _FamilyMemberStatsPageState createState() => _FamilyMemberStatsPageState();
+  State<FamilyMemberStatsPage> createState() => _FamilyMemberStatsPageState();
 }
 
-class _FamilyMemberStatsPageState extends State<FamilyMemberStatsPage> {
-  String selectedReport = "Today"; // Default report type
-  DateTime? startDate;
-  DateTime? endDate;
+class _FamilyMemberStatsPageState extends State<FamilyMemberStatsPage>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  String selectedTimeFrame = 'Daily';
 
-  // Mock health data - replace with real sensor data
-  Map<String, Map<String, String>> healthData = {
-    "Today": {
-      "Temperature": "98.6°F",
-      "Pressure": "120/80 mmHg",
-      "SPO2": "98%",
-      "Glucose": "90 mg/dL",
-      "Heart Rate": "72 bpm",
-    },
-    "Weekly": {
-      "Temperature": "98.4°F avg",
-      "Pressure": "118/78 mmHg avg",
-      "SPO2": "97% avg",
-      "Glucose": "88 mg/dL avg",
-      "Heart Rate": "70 bpm avg",
-    },
-    "Monthly": {
-      "Temperature": "98.5°F avg",
-      "Pressure": "119/79 mmHg avg",
-      "SPO2": "98% avg",
-      "Glucose": "89 mg/dL avg",
-      "Heart Rate": "71 bpm avg",
-    },
-    "Custom": {
-      "Temperature": "98.3°F avg",
-      "Pressure": "117/77 mmHg avg",
-      "SPO2": "97% avg",
-      "Glucose": "87 mg/dL avg",
-      "Heart Rate": "69 bpm avg",
-    },
+  // Mock health data - replace with actual data source later
+  final Map<String, dynamic> _mockHealthData = {
+    'heartRate': 75,
+    'systolic': 120,
+    'diastolic': 80,
+    'temperature': 98.6,
+    'glucose': 95,
+    'spo2': 98,
+    'respirationRate': 16,
   };
+
+  // Mock historical data for trends
+  final List<Map<String, dynamic>> _mockHistoryData = [
+    {'heartRate': 72, 'systolic': 118, 'temperature': 98.4, 'glucose': 92, 'timestamp': DateTime.now().subtract(Duration(days: 6))},
+    {'heartRate': 74, 'systolic': 122, 'temperature': 98.5, 'glucose': 94, 'timestamp': DateTime.now().subtract(Duration(days: 5))},
+    {'heartRate': 76, 'systolic': 119, 'temperature': 98.7, 'glucose': 96, 'timestamp': DateTime.now().subtract(Duration(days: 4))},
+    {'heartRate': 73, 'systolic': 121, 'temperature': 98.3, 'glucose': 93, 'timestamp': DateTime.now().subtract(Duration(days: 3))},
+    {'heartRate': 75, 'systolic': 120, 'temperature': 98.6, 'glucose': 95, 'timestamp': DateTime.now().subtract(Duration(days: 2))},
+    {'heartRate': 77, 'systolic': 123, 'temperature': 98.8, 'glucose': 97, 'timestamp': DateTime.now().subtract(Duration(days: 1))},
+    {'heartRate': 75, 'systolic': 120, 'temperature': 98.6, 'glucose': 95, 'timestamp': DateTime.now()},
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: Text("${widget.name}'s Health Report"),
         backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.black87),
           onPressed: () => Navigator.pop(context),
         ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Profile and Basic Info Section
-            _buildProfileSection(),
-            const SizedBox(height: 40),
-
-            // Health Metrics Section
-            _buildHealthMetricsSection(),
-            const SizedBox(height: 40),
-
-            // Report Type Selection
-            _buildReportTypeButtons(),
-            const SizedBox(height: 20),
-
-            // Custom Date Picker (Only when "Custom" is selected)
-            if (selectedReport == "Custom") _buildDatePicker(),
-            if (selectedReport == "Custom") const SizedBox(height: 20),
-
-            // Compare Button
-            _buildCompareButton(),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProfileSection() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Profile Image with Add Button
-        Stack(
-          children: [
-            Container(
-              width: 120,
-              height: 140,
-              decoration: BoxDecoration(
-                color: const Color(0xFF4AFF4A),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: widget.imageUrl.isNotEmpty
-                    ? Image.asset(
-                  widget.imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Icon(Icons.person, size: 60, color: Colors.black54);
-                  },
-                )
-                    : const Icon(Icons.person, size: 60, color: Colors.black54),
-              ),
-            ),
-            Positioned(
-              top: 8,
-              right: 8,
-              child: GestureDetector(
-                onTap: () {
-                  // TODO: Implement image picker functionality
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Change profile picture feature coming soon!")),
-                  );
-                },
-                child: Container(
-                  width: 24,
-                  height: 24,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 2,
-                        offset: Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(Icons.add, size: 16, color: Colors.black),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(width: 24),
-        // Basic Information
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildInfoRow("Name:", widget.name),
-              _buildInfoRow("Age:", widget.age.isEmpty ? "25" : widget.age),
-              _buildInfoRow("Gender:", widget.gender.isEmpty ? "Male" : widget.gender),
-            ],
+        title: Text(
+          '${widget.memberName}\'s Health Stats',
+          style: const TextStyle(
+            color: Colors.black87,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
           ),
         ),
-        // Pills decoration
-        _buildPillsDecoration(),
-      ],
-    );
-  }
-
-  Widget _buildPillsDecoration() {
-    return Container(
-      width: 60,
-      height: 40,
-      child: Stack(
-        children: [
-          Positioned(
-            right: 0,
-            top: 0,
-            child: Container(
-              width: 30,
-              height: 20,
-              decoration: BoxDecoration(
-                color: const Color(0xFF6B9BFF),
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.blue.withOpacity(0.3),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-            ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share, color: Colors.black87),
+            onPressed: () => _shareStats(),
           ),
-          Positioned(
-            right: 10,
-            top: 15,
-            child: Container(
-              width: 35,
-              height: 20,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFF6B6B),
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.red.withOpacity(0.3),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-            ),
+          IconButton(
+            icon: const Icon(Icons.more_vert, color: Colors.black87),
+            onPressed: () => _showMoreOptions(),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildHealthMetricsSection() {
-    Map<String, String> currentData = healthData[selectedReport] ?? healthData["Today"]!;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      body: Column(
         children: [
-          Text(
-            "$selectedReport Health Report",
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 20),
-          ...currentData.entries.map((entry) => _buildHealthMetric(entry.key, entry.value)),
-        ],
-      ),
-    );
-  }
+          // Member Info Header
+          _buildMemberHeader(),
 
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(width: 8),
+          // Time Frame Selector
+          _buildTimeFrameSelector(),
+
+          // Stats Content
           Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 24,
-                color: Colors.black,
-              ),
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildVitalsTab(),
+                _buildTrendsTab(),
+                _buildReportsTab(),
+              ],
             ),
           ),
         ],
       ),
+      bottomNavigationBar: _buildBottomNavigation(),
     );
   }
 
-  Widget _buildHealthMetric(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
+  Widget _buildMemberHeader() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+          ),
+        ],
+      ),
       child: Row(
         children: [
-          SizedBox(
-            width: 140,
-            child: Text(
-              "$label:",
+          CircleAvatar(
+            radius: 35,
+            backgroundImage: widget.memberImage.isNotEmpty
+                ? NetworkImage(widget.memberImage)
+                : null,
+            backgroundColor: const Color(0xFF4A90E2),
+            child: widget.memberImage.isEmpty
+                ? Text(
+              widget.memberName[0].toUpperCase(),
               style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
               ),
-            ),
+            )
+                : null,
           ),
           const SizedBox(width: 16),
           Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 18,
-                color: Colors.black54,
-                fontWeight: FontWeight.w500,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.memberName,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Age: ${widget.memberAge}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Health status using mock data
+                Builder(
+                  builder: (context) {
+                    final status = _getHealthStatus(_mockHealthData);
+                    return Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: status['color'],
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          status['text'],
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: status['color'],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
             ),
           ),
         ],
@@ -313,127 +204,439 @@ class _FamilyMemberStatsPageState extends State<FamilyMemberStatsPage> {
     );
   }
 
-  Widget _buildReportTypeButtons() {
-    List<String> reportTypes = ["Today", "Weekly", "Monthly", "Custom"];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Select Report Type:",
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
+  Widget _buildTimeFrameSelector() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: [
+          TabBar(
+            controller: _tabController,
+            labelColor: const Color(0xFF4A90E2),
+            unselectedLabelColor: Colors.grey,
+            indicatorColor: const Color(0xFF4A90E2),
+            tabs: const [
+              Tab(text: 'Vitals'),
+              Tab(text: 'Trends'),
+              Tab(text: 'Reports'),
+            ],
           ),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: reportTypes.map((type) => _buildReportButton(type)).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildReportButton(String reportType) {
-    bool isSelected = selectedReport == reportType;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedReport = reportType;
-          // Reset date selection when switching away from custom
-          if (reportType != "Custom") {
-            startDate = null;
-            endDate = null;
-          }
-        });
-
-        // Show feedback
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Switched to $reportType report"),
-            duration: const Duration(seconds: 1),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: ['Daily', 'Weekly', 'Monthly'].map((timeFrame) {
+              return GestureDetector(
+                onTap: () => setState(() => selectedTimeFrame = timeFrame),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: selectedTimeFrame == timeFrame
+                        ? const Color(0xFF4A90E2)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: selectedTimeFrame == timeFrame
+                          ? const Color(0xFF4A90E2)
+                          : Colors.grey.shade300,
+                    ),
+                  ),
+                  child: Text(
+                    timeFrame,
+                    style: TextStyle(
+                      color: selectedTimeFrame == timeFrame
+                          ? Colors.white
+                          : Colors.grey[600],
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
           ),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF4A7FFF) : Colors.grey[200],
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? const Color(0xFF4A7FFF) : Colors.grey[300]!,
-          ),
-        ),
-        child: Text(
-          reportType == "Custom" ? "Custom 📅" : reportType,
-          style: TextStyle(
-            fontSize: 16,
-            color: isSelected ? Colors.white : Colors.black87,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildDatePicker() {
-    return Container(
+  Widget _buildVitalsTab() {
+    // Using mock data instead of Firebase stream
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          _buildVitalCard(
+            'Heart Rate',
+            '${_mockHealthData['heartRate']}',
+            'bpm',
+            Icons.favorite,
+            Colors.red,
+            _getHeartRateStatus(_mockHealthData['heartRate']),
+          ),
+          _buildVitalCard(
+            'Blood Pressure',
+            '${_mockHealthData['systolic']}/${_mockHealthData['diastolic']}',
+            'mmHg',
+            Icons.monitor_heart,
+            Colors.purple,
+            _getBloodPressureStatus(_mockHealthData['systolic'], _mockHealthData['diastolic']),
+          ),
+          _buildVitalCard(
+            'Body Temperature',
+            '${_mockHealthData['temperature']}',
+            '°F',
+            Icons.thermostat,
+            Colors.orange,
+            _getTemperatureStatus(_mockHealthData['temperature']),
+          ),
+          _buildVitalCard(
+            'Glucose Level',
+            '${_mockHealthData['glucose']}',
+            'mg/dL',
+            Icons.water_drop,
+            Colors.blue,
+            _getGlucoseStatus(_mockHealthData['glucose']),
+          ),
+          _buildVitalCard(
+            'SpO₂',
+            '${_mockHealthData['spo2']}',
+            '%',
+            Icons.air,
+            Colors.teal,
+            _getSpO2Status(_mockHealthData['spo2']),
+          ),
+          _buildVitalCard(
+            'Respiration Rate',
+            '${_mockHealthData['respirationRate']}',
+            'breaths/min',
+            Icons.healing,
+            Colors.green,
+            _getRespirationStatus(_mockHealthData['respirationRate']),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVitalCard(String title, String value, String unit, IconData icon,
+      Color color, Map<String, dynamic> status) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.blue[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue[200]!),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      unit,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: status['color'],
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      status['text'],
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: status['color'],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Icon(
+            Icons.arrow_forward_ios,
+            size: 16,
+            color: Colors.grey[400],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrendsTab() {
+    // Using mock historical data instead of Firebase stream
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          _buildTrendChart('Heart Rate', 'heartRate', Colors.red),
+          _buildTrendChart('Blood Pressure (Systolic)', 'systolic', Colors.purple),
+          _buildTrendChart('Temperature', 'temperature', Colors.orange),
+          _buildTrendChart('Glucose', 'glucose', Colors.blue),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrendChart(String title, String field, Color color) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Select Custom Date Range:",
-            style: TextStyle(
+          Text(
+            title,
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildDateButton(
-                  label: startDate == null ? "Start Date" : "Start: ${_formatDate(startDate!)}",
-                  onTap: () => _selectStartDate(),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildDateButton(
-                  label: endDate == null ? "End Date" : "End: ${_formatDate(endDate!)}",
-                  onTap: () => _selectEndDate(),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _generateCustomReport,
+            height: 200,
+            child: Builder(
+              builder: (context) {
+                // Use mock historical data
+                if (_mockHistoryData.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'No trend data available',
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                  );
+                }
+
+                final spots = _mockHistoryData.asMap().entries.map((entry) {
+                  final data = entry.value;
+                  final value = (data[field] ?? 0).toDouble();
+                  return FlSpot(entry.key.toDouble(), value);
+                }).toList();
+
+                return LineChart(
+                  LineChartData(
+                    gridData: FlGridData(show: false),
+                    titlesData: FlTitlesData(show: false),
+                    borderData: FlBorderData(show: false),
+                    lineBarsData: [
+                      LineChartBarData(
+                        spots: spots,
+                        isCurved: true,
+                        color: color,
+                        barWidth: 3,
+                        belowBarData: BarAreaData(
+                          show: true,
+                          color: color.withOpacity(0.1),
+                        ),
+                        dotData: FlDotData(
+                          show: true,
+                          getDotPainter: (spot, percent, barData, index) {
+                            return FlDotCirclePainter(
+                              radius: 4,
+                              color: color,
+                              strokeWidth: 2,
+                              strokeColor: Colors.white,
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReportsTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          _buildReportCard(
+            'Weekly Summary',
+            'View comprehensive weekly health report',
+            Icons.calendar_today,
+            Colors.blue,
+                () => _generateWeeklyReport(),
+          ),
+          _buildReportCard(
+            'Monthly Analysis',
+            'Detailed monthly health analysis and trends',
+            Icons.date_range,
+            Colors.green,
+                () => _generateMonthlyReport(),
+          ),
+          _buildReportCard(
+            'Custom Report',
+            'Generate custom date range reports',
+            Icons.tune,
+            Colors.orange,
+                () => _generateCustomReport(),
+          ),
+          _buildReportCard(
+            'Export Data',
+            'Export health data to PDF or CSV',
+            Icons.download,
+            Colors.purple,
+                () => _exportData(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReportCard(String title, String subtitle, IconData icon,
+      Color color, VoidCallback onTap) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(20),
+        leading: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: color, size: 24),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey[600],
+          ),
+        ),
+        trailing: Icon(
+          Icons.arrow_forward_ios,
+          size: 16,
+          color: Colors.grey[400],
+        ),
+        onTap: onTap,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        tileColor: Colors.white,
+      ),
+    );
+  }
+
+  Widget _buildBottomNavigation() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: () => _compareWithFamily(),
+              icon: const Icon(Icons.compare_arrows),
+              label: const Text('Compare'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF4A90E2),
+                side: const BorderSide(color: Color(0xFF4A90E2)),
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
-                "Generate Custom Report",
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: () => _setAlerts(),
+              icon: const Icon(Icons.notifications),
+              label: const Text('Set Alerts'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4A90E2),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
             ),
@@ -443,142 +646,167 @@ class _FamilyMemberStatsPageState extends State<FamilyMemberStatsPage> {
     );
   }
 
-  Widget _buildDateButton({required String label, required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: const Color(0xFF4A7FFF),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 14,
-            color: Colors.white,
-            fontWeight: FontWeight.w500,
+  Widget _buildNoDataWidget() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.health_and_safety_outlined,
+            size: 80,
+            color: Colors.grey[400],
           ),
+          const SizedBox(height: 16),
+          Text(
+            'No health data available',
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Sensor data will appear here once connected',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[500],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Health status helper methods
+  Map<String, dynamic> _getHealthStatus(Map<String, dynamic> data) {
+    // Overall health status based on multiple vitals
+    final heartRate = data['heartRate'] ?? 0;
+    final systolic = data['systolic'] ?? 0;
+    final diastolic = data['diastolic'] ?? 0;
+    final temperature = data['temperature'] ?? 0.0;
+
+    if (heartRate > 100 || systolic > 140 || diastolic > 90 || temperature > 100.4) {
+      return {'color': Colors.red, 'text': 'Attention Needed'};
+    } else if (heartRate < 60 || systolic < 90 || diastolic < 60) {
+      return {'color': Colors.orange, 'text': 'Monitor Closely'};
+    } else {
+      return {'color': Colors.green, 'text': 'Normal Range'};
+    }
+  }
+
+  Map<String, dynamic> _getHeartRateStatus(dynamic heartRate) {
+    final hr = (heartRate ?? 0).toInt();
+    if (hr < 60) return {'color': Colors.orange, 'text': 'Below Normal'};
+    if (hr > 100) return {'color': Colors.red, 'text': 'Above Normal'};
+    return {'color': Colors.green, 'text': 'Normal'};
+  }
+
+  Map<String, dynamic> _getBloodPressureStatus(dynamic systolic, dynamic diastolic) {
+    final sys = (systolic ?? 0).toInt();
+    final dia = (diastolic ?? 0).toInt();
+    if (sys > 140 || dia > 90) return {'color': Colors.red, 'text': 'High'};
+    if (sys < 90 || dia < 60) return {'color': Colors.orange, 'text': 'Low'};
+    return {'color': Colors.green, 'text': 'Normal'};
+  }
+
+  Map<String, dynamic> _getTemperatureStatus(dynamic temperature) {
+    final temp = (temperature ?? 0.0).toDouble();
+    if (temp > 100.4) return {'color': Colors.red, 'text': 'Fever'};
+    if (temp < 97.0) return {'color': Colors.orange, 'text': 'Low'};
+    return {'color': Colors.green, 'text': 'Normal'};
+  }
+
+  Map<String, dynamic> _getGlucoseStatus(dynamic glucose) {
+    final gluc = (glucose ?? 0).toInt();
+    if (gluc > 140) return {'color': Colors.red, 'text': 'High'};
+    if (gluc < 70) return {'color': Colors.orange, 'text': 'Low'};
+    return {'color': Colors.green, 'text': 'Normal'};
+  }
+
+  Map<String, dynamic> _getSpO2Status(dynamic spo2) {
+    final sp = (spo2 ?? 0).toInt();
+    if (sp < 95) return {'color': Colors.red, 'text': 'Low'};
+    if (sp < 98) return {'color': Colors.orange, 'text': 'Monitor'};
+    return {'color': Colors.green, 'text': 'Normal'};
+  }
+
+  Map<String, dynamic> _getRespirationStatus(dynamic respirationRate) {
+    final rr = (respirationRate ?? 0).toInt();
+    if (rr > 20 || rr < 12) return {'color': Colors.orange, 'text': 'Monitor'};
+    return {'color': Colors.green, 'text': 'Normal'};
+  }
+
+  // Action methods
+  void _shareStats() {
+    // Implement share functionality
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Share functionality will be implemented')),
+    );
+  }
+
+  void _showMoreOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('Edit Profile'),
+              onTap: () => Navigator.pop(context),
+            ),
+            ListTile(
+              leading: const Icon(Icons.history),
+              title: const Text('View History'),
+              onTap: () => Navigator.pop(context),
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text('Settings'),
+              onTap: () => Navigator.pop(context),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildCompareButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: _navigateToComparison,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF4A7FFF),
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(25),
-          ),
-          elevation: 2,
-        ),
-        child: const Text(
-          "Compare Stats with Family Members",
-          style: TextStyle(
-            fontSize: 18,
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
+  void _generateWeeklyReport() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Generating weekly report...')),
     );
   }
 
-  // Helper Methods
-  String _formatDate(DateTime date) {
-    return "${date.day}/${date.month}/${date.year}";
-  }
-
-  Future<void> _selectStartDate() async {
-    DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: startDate ?? DateTime.now().subtract(const Duration(days: 7)),
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
-      helpText: "Select Start Date",
+  void _generateMonthlyReport() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Generating monthly report...')),
     );
-
-    if (picked != null) {
-      setState(() {
-        startDate = picked;
-      });
-    }
-  }
-
-  Future<void> _selectEndDate() async {
-    DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: endDate ?? DateTime.now(),
-      firstDate: startDate ?? DateTime(2020),
-      lastDate: DateTime.now(),
-      helpText: "Select End Date",
-    );
-
-    if (picked != null) {
-      setState(() {
-        endDate = picked;
-      });
-    }
   }
 
   void _generateCustomReport() {
-    if (startDate == null || endDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Please select both start and end dates"),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    if (startDate!.isAfter(endDate!)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Start date cannot be after end date"),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    // TODO: Implement actual custom report generation with selected date range
-    setState(() {
-      // This triggers a rebuild to show the custom data
-    });
-
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("Generated report from ${_formatDate(startDate!)} to ${_formatDate(endDate!)}"),
-        backgroundColor: Colors.green,
-      ),
+      const SnackBar(content: Text('Custom report generator will be implemented')),
     );
   }
 
-  void _navigateToComparison() {
-    // TODO: Navigate to comparison page
-    // Example navigation:
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(
-    //     builder: (context) => ComparisonPage(
-    //       currentMember: widget.name,
-    //       healthData: healthData[selectedReport]!,
-    //     ),
-    //   ),
-    // );
-
+  void _exportData() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Comparison feature coming soon!"),
-        backgroundColor: Colors.blue,
-      ),
+      const SnackBar(content: Text('Export functionality will be implemented')),
+    );
+  }
+
+  void _compareWithFamily() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Family comparison will be implemented')),
+    );
+  }
+
+  void _setAlerts() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Alert settings will be implemented')),
     );
   }
 }

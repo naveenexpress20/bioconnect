@@ -1,3 +1,22 @@
+// Define extra properties at the top level in Kotlin DSL:
+extra["flutterCompileSdkVersion"] = 35
+extra["flutterTargetSdkVersion"] = 35
+extra["flutterMinSdkVersion"] = 23
+extra["flutterNdkVersion"] = "25.1.8937393"
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath("com.android.tools.build:gradle:7.3.0")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.7.10")
+
+    }
+}
+
 allprojects {
     repositories {
         google()
@@ -5,29 +24,13 @@ allprojects {
     }
 }
 
-val newBuildDir: Directory = rootProject.layout.buildDirectory.dir("../../build").get()
-rootProject.layout.buildDirectory.value(newBuildDir)
+rootProject.buildDir = file("../build")
 
 subprojects {
-    val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
-    project.layout.buildDirectory.value(newSubprojectBuildDir)
-}
-subprojects {
+    project.buildDir = file("${rootProject.buildDir}/${project.name}")
     project.evaluationDependsOn(":app")
 }
 
 tasks.register<Delete>("clean") {
-    delete(rootProject.layout.buildDirectory)
-}
-
-// ✅ Add Firebase Dependencies
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        classpath("com.android.tools.build:gradle:8.0.2")
-        classpath("com.google.gms:google-services:4.3.15") // Firebase Plugin
-    }
+    delete(rootProject.buildDir)
 }
