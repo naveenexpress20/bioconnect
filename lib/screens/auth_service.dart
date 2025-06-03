@@ -1,103 +1,162 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthService {
-  final SupabaseClient supabase = Supabase.instance.client;
+  final SupabaseClient _supabase = Supabase.instance.client;
 
-  // ✅ Stream for Auth State Changes
-  Stream<AuthState> get authStateChanges => supabase.auth.onAuthStateChange;
+  // Get current user
+  User? get currentUser => _supabase.auth.currentUser;
 
-  // ✅ Send OTP via Phone
-  Future<void> sendOtp(String phoneNumber) async {
+  // Auth state changes stream
+  Stream<AuthState> get authStateChanges => _supabase.auth.onAuthStateChange;
+
+  // Sign in with email and password (supports both named and positional parameters)
+  Future<AuthResponse> signInWithEmail(String email, String password) async {
     try {
-      await supabase.auth.signInWithOtp(phone: phoneNumber);
-      print("OTP sent successfully!");
-    } catch (e) {
-      print("OTP Send Error: $e");
-    }
-  }
-
-  // ✅ Verify OTP
-  Future<void> verifyOtp(String phoneNumber, String otpCode) async {
-    try {
-      await supabase.auth.verifyOTP(
-        phone: phoneNumber,
-        token: otpCode,
-        type: OtpType.sms,
-      );
-      print("OTP Verification Successful!");
-    } catch (e) {
-      print("OTP Verification Failed: $e");
-    }
-  }
-
-  // ✅ Email Sign-In
-  Future<void> signInWithEmail(String email, String password) async {
-    try {
-      final response = await supabase.auth.signInWithPassword(
+      final response = await _supabase.auth.signInWithPassword(
         email: email,
         password: password,
       );
-      if (response.user == null) {
-        print("Email Login Failed: No user returned.");
-      } else {
-        print("Email Login Successful!");
-      }
+      return response;
     } catch (e) {
-      print("Email Login Error: $e");
+      rethrow;
     }
   }
 
-  // ✅ Email Sign-Up
-  Future<void> signUpWithEmail(String email, String password, Map<String, dynamic> userData) async {
+  // Sign up with email and password (supports both named and positional parameters)
+  Future<AuthResponse> signUpWithEmail(String email, String password, [Map<String, dynamic>? userData]) async {
     try {
-      final response = await supabase.auth.signUp(
+      final response = await _supabase.auth.signUp(
         email: email,
         password: password,
         data: userData,
       );
-      if (response.user == null) {
-        print("Sign-up Failed: No user returned.");
-      } else {
-        print("Sign-up Successful! Verify your email.");
-      }
+      return response;
     } catch (e) {
-      print("Sign-up Error: $e");
+      rethrow;
     }
   }
 
-
-  // ✅ Google Sign-In
-  Future<void> signInWithGoogle() async {
+  // Send OTP to phone number
+  Future<void> sendOtp(String phoneNumber) async {
     try {
-      await supabase.auth.signInWithOAuth(OAuthProvider.google);
-      print("Google Login Initiated.");
+      await _supabase.auth.signInWithOtp(
+        phone: phoneNumber,
+      );
     } catch (e) {
-      print("Google Auth Error: $e");
+      rethrow;
     }
   }
 
-  // ✅ Facebook Sign-In
-  Future<void> signInWithFacebook() async {
+  // Sign in with Google
+  Future<bool> signInWithGoogle() async {
     try {
-      await supabase.auth.signInWithOAuth(OAuthProvider.facebook);
-      print("Facebook Login Initiated.");
+      final response = await _supabase.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: 'io.supabase.bioconnect://login-callback/',
+      );
+      return response;
     } catch (e) {
-      print("Facebook Auth Error: $e");
+      print('Google Sign In Error: $e');
+      return false;
     }
   }
 
-  // ✅ Sign Out
+  // Verify OTP for phone
+  Future<AuthResponse> verifyPhoneOTP({
+    required String phone,
+    required String token,
+  }) async {
+    try {
+      final response = await _supabase.auth.verifyOTP(
+        type: OtpType.sms,
+        phone: phone,
+        token: token,
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Verify OTP for email
+  Future<AuthResponse> verifyEmailOTP({
+    required String email,
+    required String token,
+  }) async {
+    try {
+      final response = await _supabase.auth.verifyOTP(
+        type: OtpType.signup,
+        email: email,
+        token: token,
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Sign out
   Future<void> signOut() async {
     try {
-      await supabase.auth.signOut();
-      print("User signed out.");
+      await _supabase.auth.signOut();
     } catch (e) {
-      print("Sign out error: $e");
+      rethrow;
     }
   }
 
-  // ✅ Get Current User
-  User? getCurrentUser() {
-    return supabase.auth.currentUser;
+  // Get user display name
+  String? getUserName() {
+    final user = currentUser;
+    if (user != null) {
+      return user.userMetadata?['name'] ??
+          user.userMetadata?['full_name'] ??
+          user.email?.split('@')[0] ??
+          'User';
+    }
+    return null;
+  }
+
+  // Get user email
+  String? getUserEmail() {
+    final user = currentUser;
+    return user?.email;
+  }
+
+  // Get user phone
+  String? getUserPhone() {
+    final user = currentUser;
+    return user?.phone;
+  }
+
+  // Check if user is logged in
+  bool isLoggedIn() {
+    return currentUser != null;
+  }
+
+  // Get user ID
+  String? getUserId() {
+    final user = currentUser;
+    return user?.id;
+  }
+
+  // Reset password
+  Future<void> resetPassword(String email) async {
+    try {
+      await _supabase.auth.resetPasswordForEmail(email);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Update user data
+  Future<UserResponse> updateUser(Map<String, dynamic> userData) async {
+    try {
+      final response = await _supabase.auth.updateUser(
+        UserAttributes(data: userData),
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
   }
 }
