@@ -28,7 +28,10 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   void initState() {
     super.initState();
     _setupAnimations();
-    _checkAuthState();
+    // ❌ REMOVED: _checkAuthState(); - This was causing auto-navigation
+
+    // Only listen for future auth changes, not existing state
+    _listenToAuthChanges();
   }
 
   void _setupAnimations() {
@@ -56,11 +59,12 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     _animationController.forward();
   }
 
-  void _checkAuthState() {
-    // Listen to auth state changes using AuthService
+  // ✅ FIXED: Only listen to NEW auth changes, not existing state
+  void _listenToAuthChanges() {
     auth.authStateChanges.listen((user) {
-      if (user != null && mounted) {
-        // User is logged in, navigate to home
+      // Only navigate if user just signed in (not on app start)
+      if (user != null && mounted && _isLoading) {
+        // User just logged in during this session, navigate to home
         Navigator.pushNamedAndRemoveUntil(
           context,
           '/home',
@@ -68,8 +72,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           arguments: {
             'userName': user.session?.user.userMetadata?['full_name'] ?? '',
             'userEmail': user.session?.user.email ?? '',
-          }
-          ,
+          },
         );
       }
     });
@@ -397,21 +400,25 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       await auth.sendOtp(phoneNumber);
 
       // Navigate to OTP page
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => OtpPage(
-            phoneNumber: phoneNumber,
-            verificationId: '', // Supabase doesn't use verification ID like Firebase
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OtpPage(
+              phoneNumber: phoneNumber,
+              verificationId: '', // Supabase doesn't use verification ID like Firebase
+            ),
           ),
-        ),
-      );
-      _showSuccessSnackBar('OTP sent to $phoneNumber');
+        );
+        _showSuccessSnackBar('OTP sent to $phoneNumber');
+      }
 
     } catch (e) {
       _showErrorSnackBar('Error: ${e.toString()}');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -426,7 +433,9 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     } catch (e) {
       _showErrorSnackBar('Google sign-in failed: ${e.toString()}');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -501,38 +510,35 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     } catch (e) {
       _showErrorSnackBar('Email sign-in failed: ${e.toString()}');
     } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  // Sign out method for testing
-  void _signOut() async {
-    try {
-      await auth.signOut();
-    } catch (e) {
-      print('Sign out error: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    }
   }
 
   void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    }
   }
 }

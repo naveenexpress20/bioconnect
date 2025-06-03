@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart'; // Supabase SDK
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+// ✅ Use correct relative imports for local files
 import 'screens/login_screen.dart';
 import 'screens/signup_page.dart';
 import 'screens/otp_page.dart';
@@ -13,12 +15,20 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    // ✅ Initialize Supabase with the correct URL
     await Supabase.initialize(
-      url: 'https://kzlsaglruwsorekgatft.supabase.co', // ✅ Updated Supabase URL
-      anonKey: 'your-actual-anon-key', // ✅ Replace with your actual anon key
+      url: 'https://kzlsaglruwsorekgatft.supabase.co',
+      anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6bHNhZ2xydXdzb3Jla2dhdGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgyNDMwNTgsImV4cCI6MjA2MzgxOTA1OH0.I82DbHLJFPdSgBxaiBV4y2H1Hvy3Jqa9vefvKMmmO_I', // ✅ Your actual Supabase anon key
     );
     print("✅ Supabase Initialized Successfully");
+
+    // 🟢 FORCE LOGOUT: Clear any existing session to always show login
+    try {
+      await Supabase.instance.client.auth.signOut();
+      print("🔄 Cleared existing session - will show login screen");
+    } catch (e) {
+      print("ℹ️  No existing session to clear");
+    }
+
   } catch (e) {
     print("❌ Error Initializing Supabase: $e");
   }
@@ -70,8 +80,57 @@ class BioConnectApp extends StatelessWidget {
           const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
       ),
-      initialRoute: AppRoutes.login,
+
+      /// 🟢 DIRECT LOGIN: Skip splash, start with login screen
+      home: const LoginScreen(),
+
+      /// 🟢 This maps route names to screens
       routes: AppRoutes.routes,
+    );
+  }
+}
+
+/// Authentication Wrapper Widget
+/// Use this to wrap screens that require authentication
+class AuthWrapper extends StatelessWidget {
+  final Widget child;
+
+  const AuthWrapper({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<AuthState>(
+      stream: Supabase.instance.client.auth.onAuthStateChange,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        final session = snapshot.hasData ? snapshot.data!.session : null;
+
+        if (session != null) {
+          // User is authenticated, show the protected screen
+          return child;
+        } else {
+          // User is not authenticated, redirect to login
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              AppRoutes.login,
+                  (route) => false,
+            );
+          });
+
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+      },
     );
   }
 }

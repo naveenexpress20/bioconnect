@@ -1,6 +1,7 @@
 name: bioconnect
-description: A new Flutter project.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+description: A health monitoring app for families
+
+publish_to: 'none'
 
 version: 1.0.0+1
 
@@ -11,11 +12,36 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Supabase for authentication and database
-  supabase_flutter: ^2.0.0
+  # Notifications & Storage
+  shared_preferences: ^2.2.3
 
-  # Chart library
-  fl_chart: ^1.0.0
+  # Supabase dependencies
+  supabase_flutter: ^2.5.6
 
-  # UI and utility packages
+  # Chart library for statistics
+  fl_chart: ^0.68.0
+
+  # Network & Crypto
+  http: ^1.1.0
+  crypto: ^3.0.3
+
+  # UI
   cupertino_icons: ^1.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+
+  # Add your assets here
+  # assets:
+  #   - images/
+
+  # Add custom fonts here
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
